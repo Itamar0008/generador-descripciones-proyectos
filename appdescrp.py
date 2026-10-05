@@ -13,103 +13,11 @@ st.set_page_config(
 
 
 # ============================================================
-# CATÁLOGOS
-# ============================================================
-
-EXTERIORES = [
-    "Acceso peatonal",
-    "Acceso vehicular",
-    "Acceso peatonal y vehicular",
-    "Áreas verdes",
-    "Estacionamientos",
-    "Estacionamiento para motores",
-    "Piscina con asoleadero",
-    "Jacuzzi",
-    "Cuarto de bomba",
-    "Cuarto de máquinas",
-    "Cuarto para planta eléctrica",
-    "Depósito de basura",
-    "Cuarto útil",
-    "Depósito",
-    "Locker",
-    "Otros"
-]
-
-ESPACIOS = [
-    "Entrada",
-    "Entrada principal",
-    "Vestíbulo",
-    "Escaleras",
-    "Dos escaleras",
-    "Sala",
-    "Comedor",
-    "Sala – comedor",
-    "Sala – comedor – cocina",
-    "Cocina",
-    "Cocina con almacén",
-    "Cocina fría",
-    "Cocina caliente",
-    "Cocina – comedor – sala de estar",
-    "Desayunador",
-    "Sala de estar",
-    "Área de estar",
-    "Estudio",
-    "Área de estudio",
-    "Área de lavado",
-    "Terraza",
-    "Terraza techada con comedor y área BBQ",
-    "Terraza con jacuzzi",
-    "Balcón",
-    "½ baño",
-    "Baño",
-    "Baño para ambos sexos",
-    "Dormitorio de servicio con baño",
-    "Dos dormitorios de servicio con baño",
-    "Área de recepción",
-    "Área de restaurante",
-    "Área de restaurante con bar",
-    "Estación de servicio",
-    "Área de servicio",
-    "Área de caja",
-    "Cuarto eléctrico",
-    "Cuarto de bóveda",
-    "Cuarto de archivo",
-    "Cuarto de depósito",
-    "Cuarto de limpieza",
-    "Salón de eventos",
-    "Kitchenette",
-    "Gimnasio",
-    "Jardín interior",
-    "Espejos de agua",
-    "Hoguera",
-    "Cuarto de juegos",
-    "Cuarto de máquinas",
-    "Cuarto de equipos de bombeo",
-    "Dos cuartos de equipos de bombeo",
-    "Depósito para basura",
-    "Bodega",
-    "Área BBQ",
-    "Otros"
-]
-
-ATRIBUTOS_HABITACION = [
-    "Baño",
-    "Vestidor",
-    "Terraza",
-    "Balcón"
-]
-
-
-# ============================================================
-# FUNCIONES AUXILIARES
+# FUNCIONES
 # ============================================================
 
 def numero_letras(numero):
-    """
-    Convierte números pequeños a palabras.
-    """
     numeros = {
-        0: "cero",
         1: "una",
         2: "dos",
         3: "tres",
@@ -139,155 +47,107 @@ def numero_letras(numero):
         27: "veintisiete",
         28: "veintiocho",
         29: "veintinueve",
-        30: "treinta",
+        30: "treinta"
     }
 
     return numeros.get(numero, str(numero))
 
 
-def formato_cantidad(numero, singular, plural):
-    """
-    Devuelve:
-    1 habitación
-    4 habitaciones
-    """
-    if numero == 1:
-        return f"una {singular}"
+def nombre_nivel(numero):
+    nombres = {
+        1: "Primer nivel",
+        2: "Segundo nivel",
+        3: "Tercer nivel",
+        4: "Cuarto nivel",
+        5: "Quinto nivel",
+        6: "Sexto nivel",
+        7: "Séptimo nivel",
+        8: "Octavo nivel",
+        9: "Noveno nivel",
+        10: "Décimo nivel"
+    }
 
-    return f"{numero_letras(numero)} {plural}"
+    return nombres.get(numero, f"Nivel {numero}")
 
 
-def generar_habitaciones(datos):
-    """
-    Genera automáticamente la descripción de las habitaciones.
-    """
+def descripcion_habitaciones(grupo):
+    cantidad = grupo["cantidad"]
+    texto = grupo["descripcion"].strip()
 
-    cantidad = datos["cantidad"]
+    if cantidad == 1:
+        if texto:
+            return f"Una {texto}"
+        return "Una habitación"
 
-    if cantidad == 0:
-        return ""
-
-    atributos = []
-
-    if datos["banos"] > 0:
-        if datos["banos"] == cantidad:
-            atributos.append("baño")
-        else:
-            atributos.append(
-                f"{numero_letras(datos['banos'])} con baño"
-            )
-
-    if datos["vestidores"] > 0:
-        if datos["vestidores"] == cantidad:
-            atributos.append("vestidor")
-        else:
-            atributos.append(
-                f"{numero_letras(datos['vestidores'])} con vestidor"
-            )
-
-    if datos["terrazas"] > 0:
-        if datos["terrazas"] == cantidad:
-            atributos.append("terraza")
-        else:
-            atributos.append(
-                f"{numero_letras(datos['terrazas'])} con terraza"
-            )
-
-    if datos["balcones"] > 0:
-        if datos["balcones"] == cantidad:
-            atributos.append("balcón")
-        else:
-            atributos.append(
-                f"{numero_letras(datos['balcones'])} con balcón"
-            )
-
-    if not atributos:
-        return formato_cantidad(
-            cantidad,
-            "habitación",
-            "habitaciones"
-        )
-
-    # Caso en que todas tienen el mismo atributo
-    if len(atributos) == 1 and (
-        datos["banos"] == cantidad
-        or datos["vestidores"] == cantidad
-        or datos["terrazas"] == cantidad
-        or datos["balcones"] == cantidad
-    ):
-        return (
-            f"{formato_cantidad(cantidad, 'habitación', 'habitaciones')}"
-            f" con {atributos[0]}"
-        )
+    if texto:
+        return f"{numero_letras(cantidad).capitalize()} {texto}"
 
     return (
-        f"{formato_cantidad(cantidad, 'habitación', 'habitaciones')} "
-        f"({', '.join(atributos)})"
+        f"{numero_letras(cantidad).capitalize()} habitaciones"
     )
 
 
 def generar_descripcion(proyecto):
-    """
-    Construye la descripción institucional completa.
-    """
-
-    tipo = proyecto["tipo"]
-    niveles = proyecto["niveles"]
-    cantidad_edificaciones = proyecto["edificaciones"]
 
     # --------------------------------------------------------
     # INTRODUCCIÓN
     # --------------------------------------------------------
 
+    tipo = proyecto["tipo"]
+    niveles = proyecto["niveles_generales"]
+
     if tipo == "Vivienda":
 
         if niveles == 1:
-            texto = (
+            introduccion = (
                 "El proyecto presentado consiste en la construcción "
                 "de una vivienda de un nivel de altura"
             )
 
         elif niveles == 2:
-            texto = (
+            introduccion = (
                 "El proyecto presentado consiste en la construcción "
                 "de una vivienda de dos niveles de altura"
             )
 
         else:
-            texto = (
+            introduccion = (
                 "El proyecto presentado consiste en la construcción "
-                f"de una vivienda de {numero_letras(niveles)} niveles de altura"
+                f"de una vivienda de {numero_letras(niveles)} "
+                "niveles de altura"
             )
 
     elif tipo == "Complejo turístico":
 
-        texto = (
+        introduccion = (
             "El proyecto presentado consiste en la construcción "
             "de un complejo turístico"
         )
 
     elif tipo == "Edificación comercial":
 
-        texto = (
+        introduccion = (
             "El proyecto presentado consiste en la construcción "
-            f"de una edificación de {numero_letras(niveles)} niveles de altura"
+            f"de una edificación de {numero_letras(niveles)} "
+            "niveles de altura"
         )
 
     elif tipo == "Edificación institucional":
 
-        texto = (
+        introduccion = (
             "El proyecto presentado consiste en la construcción "
-            f"de una edificación de {numero_letras(niveles)} niveles de altura"
+            f"de una edificación de {numero_letras(niveles)} "
+            "niveles de altura"
         )
 
     else:
 
-        texto = (
+        introduccion = (
             "El proyecto presentado consiste en la construcción "
             "de una edificación"
         )
 
-    texto += ", con las siguientes características:\n\n"
+    texto = introduccion + ", con las siguientes características:\n\n"
 
     # --------------------------------------------------------
     # EXTERIORES
@@ -299,18 +159,9 @@ def generar_descripcion(proyecto):
 
         for exterior in proyecto["exteriores"]:
 
-            if exterior == "Estacionamientos":
-                cantidad = proyecto.get("cantidad_estacionamientos", 0)
+            exterior = exterior.strip()
 
-                if cantidad > 0:
-                    texto += (
-                        f"- Estacionamientos "
-                        f"({cantidad:02d} unidades)\n"
-                    )
-                else:
-                    texto += "- Estacionamientos\n"
-
-            else:
+            if exterior:
                 texto += f"- {exterior}\n"
 
         texto += "\n"
@@ -321,58 +172,69 @@ def generar_descripcion(proyecto):
 
     texto += "EDIFICACIONES:\n"
 
-    for edificio in proyecto["lista_edificios"]:
+    for edificio in proyecto["edificios"]:
 
-        nombre = edificio["nombre"]
+        nombre = edificio["nombre"].strip()
+
+        if not nombre:
+            nombre = "Una edificación"
+
         niveles_edificio = edificio["niveles"]
 
+        # Texto del nivel
         if niveles_edificio == 1:
-            nivel_texto = "un nivel de altura"
+            texto_niveles = "un nivel de altura"
         elif niveles_edificio == 2:
-            nivel_texto = "dos niveles de altura"
+            texto_niveles = "dos niveles de altura"
         else:
-            nivel_texto = (
-                f"{numero_letras(niveles_edificio)} niveles de altura"
+            texto_niveles = (
+                f"{numero_letras(niveles_edificio)} "
+                "niveles de altura"
             )
 
         texto += (
-            f"{nombre} de {nivel_texto}, que contiene:\n"
+            f"{nombre} de {texto_niveles}, que contiene:\n"
         )
 
         # ----------------------------------------------------
         # NIVELES
         # ----------------------------------------------------
 
-        for nivel in edificio["lista_niveles"]:
+        for nivel in edificio["niveles_lista"]:
 
-            numero_nivel = nivel["numero"]
+            numero = nivel["numero"]
 
-            if numero_nivel == 0:
-                titulo = "Soterrado:"
-            elif numero_nivel == 1:
-                titulo = "Primer nivel:"
-            elif numero_nivel == 2:
-                titulo = "Segundo nivel:"
-            elif numero_nivel == 3:
-                titulo = "Tercer nivel:"
-            elif numero_nivel == 4:
-                titulo = "Cuarto nivel:"
+            # Si es un soterrado
+            if nivel["tipo"] == "Soterrado":
+
+                texto += "Soterrado:\n"
+
             else:
-                titulo = f"Nivel {numero_nivel}:"
 
-            texto += f"{titulo}\n"
+                texto += f"{nombre_nivel(numero)}:\n"
 
-            for espacio in nivel["espacios"]:
-                texto += f"- {espacio}\n"
+            # ------------------------------------------------
+            # ESPACIOS
+            # ------------------------------------------------
 
-            # Habitaciones
-            if nivel["habitaciones"]["cantidad"] > 0:
+            for elemento in nivel["elementos"]:
 
-                habitaciones_texto = generar_habitaciones(
-                    nivel["habitaciones"]
+                elemento = elemento.strip()
+
+                if elemento:
+                    texto += f"- {elemento}\n"
+
+            # ------------------------------------------------
+            # HABITACIONES
+            # ------------------------------------------------
+
+            for grupo in nivel["habitaciones"]:
+
+                texto_habitacion = descripcion_habitaciones(
+                    grupo
                 )
 
-                texto += f"- {habitaciones_texto}\n"
+                texto += f"- {texto_habitacion}\n"
 
             texto += "\n"
 
@@ -383,8 +245,11 @@ def generar_descripcion(proyecto):
 # SESSION STATE
 # ============================================================
 
-if "lista_edificios" not in st.session_state:
-    st.session_state.lista_edificios = []
+if "edificios" not in st.session_state:
+    st.session_state.edificios = []
+
+if "exteriores" not in st.session_state:
+    st.session_state.exteriores = []
 
 if "descripcion_generada" not in st.session_state:
     st.session_state.descripcion_generada = ""
@@ -397,8 +262,8 @@ if "descripcion_generada" not in st.session_state:
 st.title("🏗️ Generador de Descripciones de Proyectos")
 
 st.write(
-    "Herramienta para construir automáticamente la descripción "
-    "de proyectos a partir de características seleccionadas."
+    "Construya la descripción del proyecto agregando directamente "
+    "los elementos que necesita."
 )
 
 st.divider()
@@ -408,11 +273,12 @@ st.divider()
 # 1. INFORMACIÓN GENERAL
 # ============================================================
 
-st.header("1. Información general del proyecto")
+st.header("1. Información general")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
+
     tipo_proyecto = st.selectbox(
         "Tipo de proyecto",
         [
@@ -425,244 +291,360 @@ with col1:
     )
 
 with col2:
+
     cantidad_edificaciones = st.number_input(
         "Cantidad de edificaciones",
         min_value=1,
-        max_value=20,
+        max_value=50,
         value=1,
         step=1
     )
 
 with col3:
+
     niveles_generales = st.number_input(
         "Cantidad de niveles",
         min_value=1,
-        max_value=10,
+        max_value=20,
         value=2,
         step=1
     )
 
 
 # ============================================================
-# 2. CARACTERÍSTICAS EXTERIORES
+# 2. EXTERIORES
 # ============================================================
 
-st.header("2. Características exteriores")
+st.header("2. Exteriores")
 
-exteriores_seleccionados = st.multiselect(
-    "Seleccione las características exteriores",
-    EXTERIORES
+st.caption(
+    "Escriba cada característica exterior y agregue tantas "
+    "como necesite."
 )
 
-cantidad_estacionamientos = 0
 
-if "Estacionamientos" in exteriores_seleccionados:
+# Ajustar cantidad de elementos exteriores
+while len(st.session_state.exteriores) < 1:
+    st.session_state.exteriores.append("")
 
-    cantidad_estacionamientos = st.number_input(
-        "Cantidad de estacionamientos",
-        min_value=1,
-        max_value=500,
-        value=1,
-        step=1
-    )
+
+for i in range(len(st.session_state.exteriores)):
+
+    col1, col2 = st.columns([10, 1])
+
+    with col1:
+
+        st.session_state.exteriores[i] = st.text_input(
+            f"Elemento exterior {i + 1}",
+            value=st.session_state.exteriores[i],
+            placeholder=(
+                "Ej.: Acceso peatonal y vehicular"
+            ),
+            key=f"exterior_{i}"
+        )
+
+    with col2:
+
+        st.write("")
+        st.write("")
+
+        if st.button(
+            "✕",
+            key=f"eliminar_exterior_{i}"
+        ):
+
+            st.session_state.exteriores.pop(i)
+            st.rerun()
+
+
+if st.button(
+    "＋ Agregar elemento exterior",
+    key="agregar_exterior"
+):
+
+    st.session_state.exteriores.append("")
+    st.rerun()
 
 
 # ============================================================
 # 3. EDIFICACIONES
 # ============================================================
 
+st.divider()
+
 st.header("3. Edificaciones")
 
-st.write(
-    "Configure las edificaciones que forman parte del proyecto."
+st.caption(
+    "Agregue cada edificación y configure sus niveles."
 )
 
-# Crear edificaciones automáticamente
-while len(st.session_state.lista_edificios) < cantidad_edificaciones:
 
-    numero = len(st.session_state.lista_edificios) + 1
+# Ajustar cantidad de edificaciones
+while len(st.session_state.edificios) < cantidad_edificaciones:
 
-    st.session_state.lista_edificios.append({
-        "nombre": f"Una edificación",
+    st.session_state.edificios.append({
+        "nombre": "",
         "niveles": 1,
-        "lista_niveles": []
+        "niveles_lista": [
+            {
+                "numero": 1,
+                "tipo": "Nivel",
+                "elementos": [""],
+                "habitaciones": []
+            }
+        ]
     })
 
-# Eliminar sobrantes si se reduce la cantidad
-if len(st.session_state.lista_edificios) > cantidad_edificaciones:
 
-    st.session_state.lista_edificios = (
-        st.session_state.lista_edificios[:cantidad_edificaciones]
+if len(st.session_state.edificios) > cantidad_edificaciones:
+
+    st.session_state.edificios = (
+        st.session_state.edificios[
+            :cantidad_edificaciones
+        ]
     )
 
 
 # ============================================================
-# CONFIGURACIÓN DE CADA EDIFICACIÓN
+# EDIFICACIONES
 # ============================================================
 
 for i, edificio in enumerate(
-    st.session_state.lista_edificios
+    st.session_state.edificios
 ):
 
-    st.subheader(f"Edificación {i + 1}")
+    st.subheader(f"🏢 Edificación {i + 1}")
 
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([3, 1])
 
     with col1:
 
-        nombre_edificio = st.text_input(
-            "Descripción de la edificación",
+        edificio["nombre"] = st.text_input(
+            "Nombre / descripción de la edificación",
             value=edificio["nombre"],
-            key=f"nombre_edificio_{i}"
+            placeholder=(
+                "Ej.: Una vivienda"
+            ),
+            key=f"edificio_nombre_{i}"
         )
-
-        edificio["nombre"] = nombre_edificio
 
     with col2:
 
-        niveles_edificio = st.number_input(
+        nuevos_niveles = st.number_input(
             "Cantidad de niveles",
             min_value=1,
-            max_value=10,
+            max_value=20,
             value=edificio["niveles"],
             step=1,
-            key=f"niveles_edificio_{i}"
+            key=f"edificio_niveles_{i}"
         )
 
-        edificio["niveles"] = niveles_edificio
+        edificio["niveles"] = nuevos_niveles
 
     # --------------------------------------------------------
-    # Crear niveles
+    # CREAR NIVELES
     # --------------------------------------------------------
 
-    while len(edificio["lista_niveles"]) < niveles_edificio:
+    while len(edificio["niveles_lista"]) < nuevos_niveles:
 
-        numero_nuevo = len(edificio["lista_niveles"]) + 1
+        numero_nuevo = (
+            len(edificio["niveles_lista"]) + 1
+        )
 
-        edificio["lista_niveles"].append({
+        edificio["niveles_lista"].append({
             "numero": numero_nuevo,
-            "espacios": [],
-            "habitaciones": {
-                "cantidad": 0,
-                "banos": 0,
-                "vestidores": 0,
-                "terrazas": 0,
-                "balcones": 0
-            }
+            "tipo": "Nivel",
+            "elementos": [""],
+            "habitaciones": []
         })
 
-    if len(edificio["lista_niveles"]) > niveles_edificio:
+    if len(edificio["niveles_lista"]) > nuevos_niveles:
 
-        edificio["lista_niveles"] = (
-            edificio["lista_niveles"][:niveles_edificio]
+        edificio["niveles_lista"] = (
+            edificio["niveles_lista"][
+                :nuevos_niveles
+            ]
         )
 
     # --------------------------------------------------------
-    # Configurar niveles
+    # NIVELES
     # --------------------------------------------------------
 
     for j, nivel in enumerate(
-        edificio["lista_niveles"]
+        edificio["niveles_lista"]
     ):
 
-        if j == 0:
-            nombre_nivel = "Primer nivel"
-        elif j == 1:
-            nombre_nivel = "Segundo nivel"
-        elif j == 2:
-            nombre_nivel = "Tercer nivel"
-        elif j == 3:
-            nombre_nivel = "Cuarto nivel"
-        else:
-            nombre_nivel = f"Nivel {j + 1}"
+        numero_nivel = j + 1
 
         with st.expander(
-            f"🏢 {nombre_nivel}",
+            f"📐 {nombre_nivel(numero_nivel)}",
             expanded=True
         ):
 
-            nivel["numero"] = j + 1
+            # -----------------------------------------------
+            # TIPO DE NIVEL
+            # -----------------------------------------------
 
-            espacios = st.multiselect(
-                "Espacios y características",
-                ESPACIOS,
-                default=nivel["espacios"],
-                key=f"espacios_{i}_{j}"
+            tipo_nivel = st.selectbox(
+                "Tipo de nivel",
+                [
+                    "Nivel",
+                    "Soterrado"
+                ],
+                index=(
+                    1
+                    if nivel["tipo"] == "Soterrado"
+                    else 0
+                ),
+                key=f"tipo_nivel_{i}_{j}"
             )
 
-            nivel["espacios"] = espacios
+            nivel["tipo"] = tipo_nivel
 
-            st.markdown("**Habitaciones**")
+            # -----------------------------------------------
+            # ELEMENTOS / ESPACIOS
+            # -----------------------------------------------
 
-            cantidad_habitaciones = st.number_input(
-                "Cantidad de habitaciones",
-                min_value=0,
-                max_value=100,
-                value=nivel["habitaciones"]["cantidad"],
-                step=1,
-                key=f"habitaciones_{i}_{j}"
-            )
+            st.markdown("**Espacios y características**")
 
-            nivel["habitaciones"]["cantidad"] = (
-                cantidad_habitaciones
-            )
+            if "elementos" not in nivel:
+                nivel["elementos"] = [""]
 
-            if cantidad_habitaciones > 0:
+            if len(nivel["elementos"]) == 0:
+                nivel["elementos"].append("")
 
-                col1, col2 = st.columns(2)
+            for k in range(
+                len(nivel["elementos"])
+            ):
+
+                col1, col2 = st.columns([10, 1])
 
                 with col1:
 
-                    banos = st.number_input(
-                        "Habitaciones con baño",
-                        min_value=0,
-                        max_value=cantidad_habitaciones,
-                        value=min(
-                            nivel["habitaciones"]["banos"],
-                            cantidad_habitaciones
-                        ),
-                        key=f"banos_{i}_{j}"
-                    )
-
-                    vestidores = st.number_input(
-                        "Habitaciones con vestidor",
-                        min_value=0,
-                        max_value=cantidad_habitaciones,
-                        value=min(
-                            nivel["habitaciones"]["vestidores"],
-                            cantidad_habitaciones
-                        ),
-                        key=f"vestidores_{i}_{j}"
+                    nivel["elementos"][k] = (
+                        st.text_input(
+                            f"Elemento {k + 1}",
+                            value=nivel["elementos"][k],
+                            placeholder=(
+                                "Ej.: Sala – comedor – cocina"
+                            ),
+                            key=(
+                                f"elemento_{i}_{j}_{k}"
+                            )
+                        )
                     )
 
                 with col2:
 
-                    terrazas = st.number_input(
-                        "Habitaciones con terraza",
-                        min_value=0,
-                        max_value=cantidad_habitaciones,
-                        value=min(
-                            nivel["habitaciones"]["terrazas"],
-                            cantidad_habitaciones
-                        ),
-                        key=f"terrazas_{i}_{j}"
+                    st.write("")
+                    st.write("")
+
+                    if st.button(
+                        "✕",
+                        key=(
+                            f"eliminar_elemento_"
+                            f"{i}_{j}_{k}"
+                        )
+                    ):
+
+                        nivel["elementos"].pop(k)
+                        st.rerun()
+
+            if st.button(
+                "＋ Agregar espacio / elemento",
+                key=f"agregar_elemento_{i}_{j}"
+            ):
+
+                nivel["elementos"].append("")
+                st.rerun()
+
+            # -----------------------------------------------
+            # HABITACIONES
+            # -----------------------------------------------
+
+            st.markdown("---")
+
+            st.markdown("**Habitaciones**")
+
+            st.caption(
+                "Puede crear diferentes grupos de habitaciones. "
+                "Ej.: 1 habitación con baño + 1 habitación."
+            )
+
+            if "habitaciones" not in nivel:
+                nivel["habitaciones"] = []
+
+            # -----------------------------------------------
+            # GRUPOS DE HABITACIONES
+            # -----------------------------------------------
+
+            for h, grupo in enumerate(
+                nivel["habitaciones"]
+            ):
+
+                st.markdown(
+                    f"**Grupo de habitaciones {h + 1}**"
+                )
+
+                col1, col2, col3 = st.columns(
+                    [1, 4, 1]
+                )
+
+                with col1:
+
+                    grupo["cantidad"] = st.number_input(
+                        "Cantidad",
+                        min_value=1,
+                        max_value=100,
+                        value=grupo["cantidad"],
+                        step=1,
+                        key=(
+                            f"cantidad_hab_"
+                            f"{i}_{j}_{h}"
+                        )
                     )
 
-                    balcones = st.number_input(
-                        "Habitaciones con balcón",
-                        min_value=0,
-                        max_value=cantidad_habitaciones,
-                        value=min(
-                            nivel["habitaciones"]["balcones"],
-                            cantidad_habitaciones
+                with col2:
+
+                    grupo["descripcion"] = st.text_input(
+                        "Descripción",
+                        value=grupo["descripcion"],
+                        placeholder=(
+                            "Ej.: habitación con baño"
                         ),
-                        key=f"balcones_{i}_{j}"
+                        key=(
+                            f"descripcion_hab_"
+                            f"{i}_{j}_{h}"
+                        )
                     )
 
-                nivel["habitaciones"]["banos"] = banos
-                nivel["habitaciones"]["vestidores"] = vestidores
-                nivel["habitaciones"]["terrazas"] = terrazas
-                nivel["habitaciones"]["balcones"] = balcones
+                with col3:
+
+                    st.write("")
+                    st.write("")
+
+                    if st.button(
+                        "✕",
+                        key=(
+                            f"eliminar_hab_"
+                            f"{i}_{j}_{h}"
+                        )
+                    ):
+
+                        nivel["habitaciones"].pop(h)
+                        st.rerun()
+
+            if st.button(
+                "＋ Agregar grupo de habitaciones",
+                key=f"agregar_habitacion_{i}_{j}"
+            ):
+
+                nivel["habitaciones"].append({
+                    "cantidad": 1,
+                    "descripcion": ""
+                })
+
+                st.rerun()
 
 
 # ============================================================
@@ -674,18 +656,16 @@ st.divider()
 st.header("4. Generar descripción")
 
 if st.button(
-    "📝 Generar descripción",
+    "📝 GENERAR DESCRIPCIÓN",
     type="primary",
     use_container_width=True
 ):
 
     proyecto = {
         "tipo": tipo_proyecto,
-        "edificaciones": cantidad_edificaciones,
-        "niveles": niveles_generales,
-        "exteriores": exteriores_seleccionados,
-        "cantidad_estacionamientos": cantidad_estacionamientos,
-        "lista_edificios": st.session_state.lista_edificios
+        "niveles_generales": niveles_generales,
+        "exteriores": st.session_state.exteriores,
+        "edificios": st.session_state.edificios
     }
 
     st.session_state.descripcion_generada = (
@@ -704,13 +684,13 @@ if st.session_state.descripcion_generada:
     st.header("5. Descripción generada")
 
     st.text_area(
-        "Puede revisar y copiar el texto generado:",
+        "Revise y edite el texto si es necesario:",
         value=st.session_state.descripcion_generada,
-        height=600
+        height=650
     )
 
     st.download_button(
-        label="⬇️ Descargar descripción en TXT",
+        "⬇️ Descargar descripción",
         data=st.session_state.descripcion_generada,
         file_name="descripcion_proyecto.txt",
         mime="text/plain",
