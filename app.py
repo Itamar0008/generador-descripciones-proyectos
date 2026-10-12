@@ -1,6 +1,6 @@
 import streamlit as st
 from collections import OrderedDict
-import re
+from copy import deepcopy
 
 st.set_page_config(
     page_title="Generador de descripciones de proyectos",
@@ -10,11 +10,11 @@ st.set_page_config(
 
 st.title("Generador de descripciones de proyectos")
 st.caption(
-    "Plantillas reutilizables para redactar descripciones de proyectos. "
-    "El catálogo conserva las expresiones proporcionadas; puedes editar o añadir texto libre."
+    "Selecciona elementos preconfigurados, indica cantidades y organiza los espacios por nivel. "
+    "El catálogo conserva las expresiones originales proporcionadas."
 )
 
-# Catálogo fiel al listado proporcionado por la usuaria.
+# Catálogo original. Se conservan las categorías, los nombres y las repeticiones.
 CATALOGO = OrderedDict({
     "EXTERIORES": OrderedDict({
         "Accesos y circulación": [
@@ -144,436 +144,421 @@ CATALOGO = OrderedDict({
     }),
 })
 
-# Seis descripciones originales, conservadas como plantillas de referencia.
+# Las seis descripciones originales quedan disponibles como proyectos de ejemplo.
 PLANTILLAS = {
-    "1 — Vivienda de dos niveles con piscina y asoleadero": {
+    "1 — Vivienda de dos niveles": {
         "tipo": "vivienda",
         "niveles": 2,
-        "encabezado": "El proyecto presentado consiste en la construcción de una vivienda de dos niveles de altura, con las siguientes características:",
-        "titulo_exteriores": "EXTERIOR",
         "exteriores": [
-            "Acceso peatonal y vehicular", "Piscina con asoleadero", "Áreas verdes"
+            ("Acceso peatonal y vehicular", 1), ("Piscina con asoleadero", 1), ("Áreas verdes", 1)
         ],
-        "edificacion": "Una vivienda de dos niveles de altura, que contiene:",
-        "niveles_texto": {
+        "interiores": {
             "Primer nivel": [
-                "Marquesina doble", "Entrada", "Vestíbulo", "Escaleras",
-                "Sala – comedor - cocina con desayunador", "Área de lavado",
-                "Terraza  - comedor con área BBQ", "½ baño",
-                "Cuarto de equipos de bombeo", "Dormitorio de servicio con baño",
-                "Habitación con baño"
+                ("Marquesina doble", 1), ("Entrada", 1), ("Vestíbulo", 1), ("Escaleras", 1),
+                ("Sala – comedor - cocina con desayunador", 1), ("Área de lavado", 1),
+                ("Terraza  - comedor con área BBQ", 1), ("½ baño", 1),
+                ("Cuarto de equipos de bombeo", 1), ("Dormitorio de servicio con baño", 1),
+                ("Habitación con baño", 1)
             ],
-            "Segundo nivel": [
-                "Tres habitaciones con baño y balcón (una con vestidor)"
-            ]
+            "Segundo nivel": [("Tres habitaciones con baño y balcón (una con vestidor)", 1)]
         },
     },
-    "2 — Vivienda de un nivel con gimnasio": {
+    "2 — Vivienda de un nivel": {
         "tipo": "vivienda",
         "niveles": 1,
-        "encabezado": "El proyecto presentado consiste en la construcción de una vivienda de un nivel de altura, con las siguientes características:",
-        "titulo_exteriores": "EXTERIORES",
         "exteriores": [
-            "Acceso peatonal y vehicular", "Áreas verdes", "Estacionamientos vehiculares"
+            ("Acceso peatonal y vehicular", 1), ("Áreas verdes", 1), ("Estacionamientos vehiculares", 1)
         ],
-        "edificacion": "Una edificación con un nivel de altura, que contiene:",
-        "niveles_texto": {
+        "interiores": {
             "Primer nivel": [
-                "Entrada", "Sala – comedor – cocina", "Baño", "Gimnasio",
-                "Terraza con desayunador", "Habitación con baño"
+                ("Entrada", 1), ("Sala – comedor – cocina", 1), ("Baño", 1), ("Gimnasio", 1),
+                ("Terraza con desayunador", 1), ("Habitación con baño", 1)
             ]
         },
     },
-    "3 — Edificación de tres niveles con oficinas y salón de eventos": {
+    "3 — Edificación de tres niveles": {
         "tipo": "edificación",
         "niveles": 3,
-        "encabezado": "El proyecto presentado consiste en la construcción de una edificación de tres niveles de altura, con las siguientes características:",
-        "titulo_exteriores": "EXTERIORES",
         "exteriores": [
-            "Acceso peatonal y vehicular", "Estacionamientos vehiculares",
-            "Estacionamientos para motores",
-            "Cuarto para planta eléctrica y medidor eléctrico",
-            "Cuarto de equipos de bombeo", "½ Baños para ambos sexos",
-            "Depósito para basura", "Áreas verdes"
+            ("Acceso peatonal y vehicular", 1), ("Estacionamientos vehiculares", 1),
+            ("Estacionamientos para motores", 1),
+            ("Cuarto para planta eléctrica y medidor eléctrico", 1),
+            ("Cuarto de equipos de bombeo", 1), ("½ Baños para ambos sexos", 1),
+            ("Depósito para basura", 1), ("Áreas verdes", 1)
         ],
-        "edificacion": "Una edificación con tres niveles de altura, que contiene:",
-        "niveles_texto": {
+        "interiores": {
             "Primer nivel": [
-                "Entradas", "Dos escaleras", "Sala de espera", "Recepción",
-                "Área de servicio", "Área de cajeros", "Cuarto de control eléctrico",
-                "Baño para ambos sexos", "Oficina", "Bóveda", "Archivo", "Depósito"
+                ("Entradas", 1), ("Dos escaleras", 1), ("Sala de espera", 1), ("Recepción", 1),
+                ("Área de servicio", 1), ("Área de cajeros", 1), ("Cuarto de control eléctrico", 1),
+                ("Baño para ambos sexos", 1), ("Oficina", 1), ("Bóveda", 1), ("Archivo", 1), ("Depósito", 1)
             ],
             "Segundo nivel": [
-                "Área de estar", "Cinco cubículos de oficina", "Tres oficinas",
-                "Sala de reuniones", "Cuarto de limpieza", "Baños para ambos sexos",
-                "Cocina – comedor – sala de estar para empleados"
+                ("Área de estar", 1), ("Cinco cubículos de oficina", 1), ("Tres oficinas", 1),
+                ("Sala de reuniones", 1), ("Cuarto de limpieza", 1), ("Baños para ambos sexos", 1),
+                ("Cocina – comedor – sala de estar para empleados", 1)
             ],
             "Tercer nivel": [
-                "Salón de eventos con escenario", "Terraza con kitchenette",
-                "Baños para ambos sexos", "Depósito"
+                ("Salón de eventos con escenario", 1), ("Terraza con kitchenette", 1),
+                ("Baños para ambos sexos", 1), ("Depósito", 1)
             ],
         },
     },
-    "4 — Vivienda de dos niveles con jacuzzi, hoguera y cine": {
+    "4 — Vivienda de dos niveles con jacuzzi y hoguera": {
         "tipo": "vivienda",
         "niveles": 2,
-        "encabezado": "El proyecto presentado consiste en la construcción de una vivienda de dos niveles de altura, con las siguientes características:",
-        "titulo_exteriores": "EXTERIOR",
         "exteriores": [
-            "Acceso peatonal y vehicular", "Piscina con asoleadero", "Jacuzzi",
-            "Hoguera", "Áreas verdes"
+            ("Acceso peatonal y vehicular", 1), ("Piscina con asoleadero", 1), ("Jacuzzi", 1),
+            ("Hoguera", 1), ("Áreas verdes", 1)
         ],
-        "edificacion": "Una vivienda de dos niveles de altura, que contiene:",
-        "niveles_texto": {
+        "interiores": {
             "Primer nivel": [
-                "Marquesina doble", "Vestíbulo", "½ baño", "Escaleras",
-                "Sala – comedor - cocina con desayunador", "Cocina caliente con despensa",
-                "Bodega", "Cine", "Gimnasio", "Terraza", "Área de lavado", "Depósito",
-                "Baño", "Gazebo con área BBQ", "Dormitorio de servicio con baño",
-                "Habitación con vestidor y baño"
+                ("Marquesina doble", 1), ("Vestíbulo", 1), ("½ baño", 1), ("Escaleras", 1),
+                ("Sala – comedor - cocina con desayunador", 1), ("Cocina caliente con despensa", 1),
+                ("Bodega", 1), ("Cine", 1), ("Gimnasio", 1), ("Terraza", 1), ("Área de lavado", 1),
+                ("Depósito", 1), ("Baño", 1), ("Gazebo con área BBQ", 1),
+                ("Dormitorio de servicio con baño", 1), ("Habitación con vestidor y baño", 1)
             ],
             "Segundo nivel": [
-                "Sala de estar", "Cuatro habitaciones con baño (tres con vestidor)",
-                "Habitación Principal con vestidor, baño, piscina y balcón"
+                ("Sala de estar", 1), ("Cuatro habitaciones con baño (tres con vestidor)", 1),
+                ("Habitación Principal con vestidor, baño, piscina y balcón", 1)
             ],
         },
     },
-    "5 — Vivienda de dos niveles con piscina y dos habitaciones arriba": {
+    "5 — Vivienda de dos niveles con dos habitaciones arriba": {
         "tipo": "vivienda",
         "niveles": 2,
-        "encabezado": "El proyecto presentado consiste en la construcción de una vivienda de dos niveles de altura, con las siguientes características:",
-        "titulo_exteriores": "EXTERIOR",
         "exteriores": [
-            "Acceso peatonal y vehicular", "Piscina con asoleadero",
-            "Depósito para basura", "Áreas verdes"
+            ("Acceso peatonal y vehicular", 1), ("Piscina con asoleadero", 1),
+            ("Depósito para basura", 1), ("Áreas verdes", 1)
         ],
-        "edificacion": "Una vivienda de dos niveles de altura, que contiene:",
-        "niveles_texto": {
+        "interiores": {
             "Primer nivel": [
-                "Marquesina doble", "Entrada",
-                "Escaleras con almacén y cuarto de equipos debajo",
-                "Cuartos de equipos de bombeo", "Sala – comedor - cocina con desayunador",
-                "Área de lavado", "Terraza", "Dormitorio de servicio con baño",
-                "Habitación con baño"
+                ("Marquesina doble", 1), ("Entrada", 1),
+                ("Escaleras con almacén y cuarto de equipos debajo", 1),
+                ("Cuartos de equipos de bombeo", 1), ("Sala – comedor - cocina con desayunador", 1),
+                ("Área de lavado", 1), ("Terraza", 1), ("Dormitorio de servicio con baño", 1),
+                ("Habitación con baño", 1)
             ],
-            "Segundo nivel": [
-                "Dos habitaciones con baño y terraza"
-            ],
+            "Segundo nivel": [("Dos habitaciones con baño y terraza", 1)]
         },
     },
-    "6 — Vivienda de dos niveles con cocina fría y estudio": {
+    "6 — Vivienda de dos niveles con cocina fría": {
         "tipo": "vivienda",
         "niveles": 2,
-        "encabezado": "El proyecto presentado consiste en la construcción de una vivienda de dos niveles de altura, con las siguientes características:",
-        "titulo_exteriores": "EXTERIOR",
         "exteriores": [
-            "Acceso peatonal y vehicular", "Piscina", "Depósito para basura", "Áreas verdes"
+            ("Acceso peatonal y vehicular", 1), ("Piscina", 1),
+            ("Depósito para basura", 1), ("Áreas verdes", 1)
         ],
-        "edificacion": "Una vivienda de dos niveles de altura, que contiene:",
-        "niveles_texto": {
+        "interiores": {
             "Primer nivel": [
-                "Marquesina doble", "Entrada", "Escalera", "Sala – comedor",
-                "Cocina fría con desayunador", "Cocina caliente", "Área de lavado",
-                "Terraza con comedor", "Dormitorio de servicio con baño",
-                "Habitación con vestidor y baño"
+                ("Marquesina doble", 1), ("Entrada", 1), ("Escalera", 1), ("Sala - comedor", 1),
+                ("Cocina fría con desayunador", 1), ("Cocina caliente", 1), ("Área de lavado", 1),
+                ("Terraza con comedor", 1), ("Dormitorio de servicio con baño", 1),
+                ("Habitación con vestidor y baño", 1)
             ],
             "Segundo nivel": [
-                "Sala de estar", "Estudio", "Tres habitaciones con vestidor y baño"
+                ("Sala de estar", 1), ("Estudio", 1), ("Tres habitaciones con vestidor y baño", 1)
             ],
         },
     },
 }
 
-def pluralizar_descripcion(texto: str, cantidad: int) -> str:
-    """Pluralización prudente para opciones simples; las frases compuestas se conservan."""
-    texto = texto.strip()
-    if cantidad <= 1:
-        return texto
-    exactas = {
-        "Habitación con baño": "habitaciones con baño",
-        "Habitación con vestidor y baño": "habitaciones con vestidor y baño",
-        "Baño": "Baños",
-        "½ baño": "½ baños",
-        "½ Baño": "½ Baños",
-        "Oficina": "Oficinas",
-        "Entrada": "Entradas",
-        "Escalera": "Escaleras",
-        "Terraza": "Terrazas",
-        "Piscina": "Piscinas",
-        "Depósito": "Depósitos",
-        "Balcón": "Balcones",
-        "Gimnasio": "Gimnasios",
-        "Cine": "Cines",
-        "Vestíbulo": "Vestíbulos",
+NOMBRES_NIVELES = [
+    "Primer nivel", "Segundo nivel", "Tercer nivel", "Cuarto nivel",
+    "Quinto nivel", "Sexto nivel", "Sótano"
+]
+
+def inicializar_estado():
+    defaults = {
+        "tipo_proyecto": "vivienda",
+        "cantidad_niveles": 2,
+        "exteriores_seleccionados": [],
+        "interiores": {nivel: [] for nivel in NOMBRES_NIVELES},
+        "revision_seleccionados": [],
+        "encabezado": "El proyecto presentado consiste en la construcción de una vivienda de dos niveles de altura, con las siguientes características:",
     }
-    if texto in exactas:
-        plural = exactas[texto]
-        # Las frases comienzan con mayúscula en el catálogo; conservarla.
-        plural = plural[0].upper() + plural[1:]
-        return f"{cantidad} {plural.lower()}"
-    # Para combinaciones no contempladas, evita alterar la frase técnica.
-    return f"{cantidad} × {texto}"
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = deepcopy(value)
 
-def bullets(items):
-    return "\n".join(f"- {item}" for item in items if str(item).strip())
+def opciones_todas(seccion):
+    return [item for grupo in CATALOGO[seccion].values() for item in grupo]
 
-def construir_descripcion(tipo, niveles, exteriores, interiores, encabezado_personalizado="", titulo_exteriores="EXTERIORES", frase_edificacion=""):
-    tipo = tipo.strip() or "proyecto"
-    try:
-        n = int(niveles)
-    except (ValueError, TypeError):
-        n = 1
-    if n == 1:
-        frase_niveles = "un nivel de altura"
-    else:
-        frase_niveles = f"{n} niveles de altura"
-    primera = encabezado_personalizado.strip()
-    if not primera:
-        primera = f"El proyecto presentado consiste en la construcción de {tipo} de {frase_niveles}, con las siguientes características:"
-    partes = [primera, "", titulo_exteriores, ""]
-    if exteriores:
-        partes.append(bullets(exteriores))
+def mostrar_elementos(selecciones):
+    """Genera líneas conservando las frases compuestas originales."""
+    lineas = []
+    for item in selecciones:
+        texto = item["texto"]
+        cantidad = int(item["cantidad"])
+        # Las frases del catálogo se conservan literalmente si cantidad = 1.
+        # Para cantidades mayores se usa multiplicador para no deformar expresiones técnicas.
+        lineas.append(texto if cantidad == 1 else f"{cantidad} × {texto}")
+    return lineas
+
+def construir_texto():
+    tipo = st.session_state.tipo_proyecto.strip()
+    niveles = int(st.session_state.cantidad_niveles)
+    frase_niveles = "un nivel de altura" if niveles == 1 else f"{niveles} niveles de altura"
+    encabezado = st.session_state.encabezado.strip()
+    if not encabezado:
+        encabezado = (
+            f"El proyecto presentado consiste en la construcción de {tipo} "
+            f"de {frase_niveles}, con las siguientes características:"
+        )
+
+    partes = [encabezado, "", "EXTERIORES", ""]
+    partes.extend(["- " + x for x in mostrar_elementos(st.session_state.exteriores_seleccionados)])
     partes.extend(["", "EDIFICACIONES", ""])
-    if frase_edificacion.strip():
-        partes.append(frase_edificacion.strip())
-    elif tipo.lower().startswith("vivienda"):
+    if tipo.lower() == "vivienda":
         partes.append(f"Una vivienda de {frase_niveles}, que contiene:")
     else:
         partes.append(f"Una edificación con {frase_niveles}, que contiene:")
-    for nivel, espacios in interiores.items():
-        limpios = [x.strip() for x in espacios if str(x).strip()]
-        if limpios:
-            partes.extend(["", f"{nivel}:", bullets(limpios)])
+
+    for i, nivel in enumerate(NOMBRES_NIVELES[:min(niveles, 6)]):
+        elementos = st.session_state.interiores.get(nivel, [])
+        if elementos:
+            partes.extend(["", f"{nivel}:", *["- " + x for x in mostrar_elementos(elementos)]])
+    if st.session_state.interiores.get("Sótano"):
+        partes.extend(["", "Sótano:", *["- " + x for x in mostrar_elementos(st.session_state.interiores["Sótano"])]])
+    if st.session_state.revision_seleccionados:
+        partes.extend(["", "ELEMENTOS QUE PUEDEN REQUERIR REVISIÓN SEGÚN CRITERIO DEL PROYECTO", ""])
+        partes.extend(["- " + x for x in mostrar_elementos(st.session_state.revision_seleccionados)])
     return "\n".join(partes).strip()
 
-def copiar_plantilla_a_estado(nombre):
+def cargar_plantilla(nombre):
     p = PLANTILLAS[nombre]
     st.session_state.tipo_proyecto = p["tipo"]
     st.session_state.cantidad_niveles = p["niveles"]
-    st.session_state.encabezado_personalizado = p.get("encabezado", "")
-    st.session_state.titulo_exteriores = p.get("titulo_exteriores", "EXTERIORES")
-    st.session_state.frase_edificacion = p.get("edificacion", "")
-    st.session_state.exteriores_texto = "\n".join(p["exteriores"])
-    for i in range(1, 7):
-        key = f"nivel_{i}_texto"
-        nivel_nombre = ["Primer nivel", "Segundo nivel", "Tercer nivel",
-                        "Cuarto nivel", "Quinto nivel", "Soterrado"][i-1]
-        st.session_state[key] = "\n".join(p["niveles_texto"].get(nivel_nombre, []))
+    st.session_state.exteriores_seleccionados = [
+        {"texto": texto, "cantidad": cantidad} for texto, cantidad in p["exteriores"]
+    ]
+    st.session_state.interiores = {nivel: [] for nivel in NOMBRES_NIVELES}
+    for nivel, elementos in p["interiores"].items():
+        st.session_state.interiores[nivel] = [
+            {"texto": texto, "cantidad": cantidad} for texto, cantidad in elementos
+        ]
+    st.session_state.revision_seleccionados = []
+    if p["tipo"] == "vivienda":
+        st.session_state.encabezado = (
+            f"El proyecto presentado consiste en la construcción de una vivienda de "
+            f"{'un nivel' if p['niveles'] == 1 else str(p['niveles']) + ' niveles'} de altura, "
+            "con las siguientes características:"
+        )
+    else:
+        st.session_state.encabezado = (
+            f"El proyecto presentado consiste en la construcción de una edificación de "
+            f"{p['niveles']} niveles de altura, con las siguientes características:"
+        )
 
-def lineas(texto):
-    return [line.strip().lstrip("-•").strip() for line in texto.splitlines() if line.strip()]
+inicializar_estado()
 
-# --- Barra lateral: plantillas de referencia ---
+# Barra lateral para cargar ejemplos
 st.sidebar.header("Plantillas de referencia")
-opcion_plantilla = st.sidebar.selectbox(
-    "Cargar una de las seis descripciones originales",
+plantilla_elegida = st.sidebar.selectbox(
+    "Selecciona una plantilla original",
     ["Proyecto nuevo"] + list(PLANTILLAS.keys()),
-    key="selector_plantilla",
 )
-if "inicializado" not in st.session_state:
-    st.session_state.inicializado = True
-    st.session_state.tipo_proyecto = "vivienda"
-    st.session_state.cantidad_niveles = 2
-    st.session_state.exteriores_texto = ""
-    st.session_state.encabezado_personalizado = ""
-    st.session_state.titulo_exteriores = "EXTERIORES"
-    st.session_state.frase_edificacion = ""
-    for i in range(1, 7):
-        st.session_state[f"nivel_{i}_texto"] = ""
-
-if st.sidebar.button("Cargar plantilla seleccionada", use_container_width=True):
-    if opcion_plantilla == "Proyecto nuevo":
+if st.sidebar.button("Cargar plantilla", use_container_width=True):
+    if plantilla_elegida == "Proyecto nuevo":
         st.session_state.tipo_proyecto = "vivienda"
         st.session_state.cantidad_niveles = 1
-        st.session_state.exteriores_texto = ""
-        st.session_state.encabezado_personalizado = ""
-        st.session_state.titulo_exteriores = "EXTERIORES"
-        st.session_state.frase_edificacion = ""
-        for i in range(1, 7):
-            st.session_state[f"nivel_{i}_texto"] = ""
+        st.session_state.exteriores_seleccionados = []
+        st.session_state.interiores = {nivel: [] for nivel in NOMBRES_NIVELES}
+        st.session_state.revision_seleccionados = []
+        st.session_state.encabezado = ""
     else:
-        copiar_plantilla_a_estado(opcion_plantilla)
-        st.session_state.encabezado_personalizado = ""
+        cargar_plantilla(plantilla_elegida)
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Las seis plantillas son ejemplos editables. El texto original se usa como referencia y no se guarda sobre el catálogo.")
+st.sidebar.caption("Las plantillas cargadas son editables. Seleccionar una nueva plantilla reemplaza la selección actual.")
 
-# --- Datos generales ---
-st.header("1. Datos generales del proyecto")
+# Datos generales
+st.header("1. Datos generales")
 c1, c2 = st.columns([2, 1])
 with c1:
-    st.text_input("Tipo de proyecto / edificación", key="tipo_proyecto",
-                  help="Ejemplos: vivienda, edificación. Puedes escribir el término que corresponda.")
+    st.selectbox("Tipo de proyecto", ["vivienda", "edificación"], key="tipo_proyecto")
 with c2:
-    st.number_input("Cantidad de niveles", min_value=1, max_value=20, step=1, key="cantidad_niveles")
+    st.number_input("Cantidad de niveles", min_value=1, max_value=6, step=1, key="cantidad_niveles")
 
-st.text_area(
-    "Encabezado personalizado (opcional)",
-    key="encabezado_personalizado",
-    height=75,
-    placeholder="Déjalo vacío para generar el encabezado automáticamente. Puedes pegar aquí una redacción aprobada."
-)
-c3, c4 = st.columns(2)
-with c3:
-    st.text_input("Título de exteriores", key="titulo_exteriores")
-with c4:
-    st.text_input(
-        "Frase introductoria de edificaciones (opcional)",
-        key="frase_edificacion",
-        placeholder="Ej.: Una vivienda de dos niveles de altura, que contiene:"
-    )
-
-st.info(
-    "Para conservar la fidelidad documental, las listas de abajo admiten texto libre. "
-    "Puedes pegar cada elemento en una línea, editarlo o añadir frases que no estén en el catálogo."
-)
-
-# --- Exterior ---
-st.header("2. Exteriores")
-tab_catalogo, tab_texto = st.tabs(["Consultar catálogo original", "Editar elementos del proyecto"])
-with tab_catalogo:
-    st.caption("Catálogo completo según el listado proporcionado. Los elementos repetidos en la sección de revisión se conservan allí también.")
-    for categoria, grupos in CATALOGO["EXTERIORES"].items():
-        with st.expander(categoria):
-            for item in grupos:
-                st.markdown(f"- {item}")
-with tab_texto:
+with st.expander("Encabezado del proyecto (opcional)"):
     st.text_area(
-        "Un elemento exterior por línea",
-        key="exteriores_texto",
-        height=190,
-        placeholder="Ejemplo:\nAcceso peatonal y vehicular\nPiscina con asoleadero\nÁreas verdes"
+        "El texto se puede dejar vacío para usar el encabezado automático.",
+        key="encabezado",
+        height=90,
     )
 
-# --- Interior por nivel ---
+# Helper UI: add selected catalog item + count into state
+def selector_agregar(titulo, seccion, destino, nivel=None, key_sufijo=""):
+    st.subheader(titulo)
+    categorias = list(CATALOGO[seccion].keys())
+    col1, col2, col3 = st.columns([2, 3, 1])
+    with col1:
+        categoria = st.selectbox(
+            "Categoría",
+            categorias,
+            key=f"{key_sufijo}_{seccion}_categoria",
+        )
+    with col2:
+        elemento = st.selectbox(
+            "Elemento preconfigurado",
+            CATALOGO[seccion][categoria],
+            key=f"{key_sufijo}_{seccion}_elemento",
+        )
+    with col3:
+        cantidad = st.number_input(
+            "Cantidad",
+            min_value=1,
+            max_value=100,
+            value=1,
+            step=1,
+            key=f"{key_sufijo}_{seccion}_cantidad",
+        )
+    if st.button("Añadir elemento seleccionado", key=f"{key_sufijo}_{seccion}_agregar"):
+        destino.append({"texto": elemento, "cantidad": int(cantidad)})
+        st.success(f"Se añadió: {elemento} (cantidad: {cantidad}).")
+        st.rerun()
+
+def administrar_lista(titulo, lista, key_base):
+    st.markdown(f"**{titulo} seleccionados**")
+    if not lista:
+        st.caption("Todavía no has añadido elementos.")
+        return
+    for i, item in enumerate(lista):
+        c1, c2, c3 = st.columns([5, 1, 1])
+        with c1:
+            st.write(item["texto"])
+        with c2:
+            st.write(f"Cantidad: {item['cantidad']}")
+        with c3:
+            if st.button("Eliminar", key=f"{key_base}_eliminar_{i}"):
+                lista.pop(i)
+                st.rerun()
+
+# Exteriores: selección totalmente preconfigurada
+st.header("2. Exteriores")
+st.caption("Elige la categoría, el elemento exacto del catálogo y la cantidad. No necesitas escribir los nombres.")
+selector_agregar("Añadir exterior", "EXTERIORES", st.session_state.exteriores_seleccionados, key_sufijo="ext")
+administrar_lista("Elementos exteriores", st.session_state.exteriores_seleccionados, "ext_lista")
+
+# Interiores: cada nivel tiene su propia selección y cantidades
 st.header("3. Interiores por nivel")
 st.caption(
-    "Puedes conservar una frase compuesta tal como aparece en tus documentos o combinar espacios. "
-    "Cada línea se incorpora a la descripción sin cambiar automáticamente sus términos."
+    "Selecciona cada elemento de las listas preconfiguradas. Para combinaciones especiales de habitaciones, "
+    "usa la opción original completa, por ejemplo: «Tres habitaciones con baño y balcón (una con vestidor)»."
 )
-niveles_disponibles = [
-    "Primer nivel", "Segundo nivel", "Tercer nivel",
-    "Cuarto nivel", "Quinto nivel", "Soterrado"
-]
-n_niveles = int(st.session_state.get("cantidad_niveles", 1))
-nivel_a_etiqueta = {
-    1: "Primer nivel", 2: "Segundo nivel", 3: "Tercer nivel",
-    4: "Cuarto nivel", 5: "Quinto nivel"
-}
-niveles_a_mostrar = [nivel_a_etiqueta[i] for i in range(1, min(n_niveles, 5)+1)]
-if n_niveles > 5:
-    st.warning("La interfaz de texto muestra hasta el quinto nivel y el soterrado. Si tu proyecto tiene más niveles, puedes describirlos en el campo adicional.")
-
-tabs = st.tabs(niveles_a_mostrar + ["Soterrado", "Catálogo completo"])
-for idx, nivel in enumerate(niveles_a_mostrar):
+n = int(st.session_state.cantidad_niveles)
+niveles_visibles = NOMBRES_NIVELES[:n]
+tabs = st.tabs(niveles_visibles + ["Sótano"])
+for idx, nivel in enumerate(niveles_visibles):
     with tabs[idx]:
-        st.text_area(
-            f"Elementos del {nivel.lower()} — uno por línea",
-            key=f"nivel_{idx+1}_texto",
-            height=190,
-            placeholder="Ejemplo:\nMarquesina doble\nEntrada\nSala – comedor - cocina con desayunador\nHabitación con baño"
+        st.markdown(f"### {nivel}")
+        cat_col, item_col, qty_col = st.columns([2, 3, 1])
+        with cat_col:
+            categoria = st.selectbox(
+                "Categoría interior",
+                list(CATALOGO["INTERIORES"].keys()),
+                key=f"int_cat_{idx}",
+            )
+        with item_col:
+            elemento = st.selectbox(
+                "Elemento o combinación original",
+                CATALOGO["INTERIORES"][categoria],
+                key=f"int_item_{idx}",
+            )
+        with qty_col:
+            cantidad = st.number_input(
+                "Cantidad",
+                min_value=1,
+                max_value=100,
+                value=1,
+                step=1,
+                key=f"int_qty_{idx}",
+            )
+        if st.button("Añadir al nivel", key=f"int_add_{idx}"):
+            st.session_state.interiores[nivel].append(
+                {"texto": elemento, "cantidad": int(cantidad)}
+            )
+            st.rerun()
+        administrar_lista(
+            f"Elementos del {nivel.lower()}",
+            st.session_state.interiores[nivel],
+            f"int_lista_{idx}",
         )
-soterrado_index = len(niveles_a_mostrar)
-with tabs[soterrado_index]:
-    st.text_area(
-        "Elementos del soterrado — uno por línea",
-        key="nivel_6_texto",
-        height=150,
-        placeholder="Escribe aquí los espacios del soterrado, si corresponde."
-    )
+
 with tabs[-1]:
-    for seccion, categorias in CATALOGO.items():
-        st.subheader(seccion)
-        for categoria, items in categorias.items():
-            with st.expander(categoria):
-                for item in items:
-                    st.markdown(f"- {item}")
+    st.markdown("### Sótano")
+    cat_col, item_col, qty_col = st.columns([2, 3, 1])
+    with cat_col:
+        categoria_s = st.selectbox(
+            "Categoría interior", list(CATALOGO["INTERIORES"].keys()), key="sot_cat"
+        )
+    with item_col:
+        elemento_s = st.selectbox(
+            "Elemento o combinación original",
+            CATALOGO["INTERIORES"][categoria_s],
+            key="sot_item",
+        )
+    with qty_col:
+        cantidad_s = st.number_input(
+            "Cantidad", min_value=1, max_value=100, value=1, step=1, key="sot_qty"
+        )
+    if st.button("Añadir al sótano", key="sot_add"):
+        st.session_state.interiores["Sótano"].append(
+            {"texto": elemento_s, "cantidad": int(cantidad_s)}
+        )
+        st.rerun()
+    administrar_lista("Elementos del sótano", st.session_state.interiores["Sótano"], "sot_lista")
 
-# --- Generador de combinaciones con cantidad ---
-st.header("4. Añadir una combinación con cantidad")
-st.write(
-    "Selecciona una frase del catálogo y una cantidad. Para las combinaciones especiales, "
-    "puedes conservar la frase completa o escribir una descripción propia. Al añadirla, se coloca "
-    "en el nivel elegido; también puedes editar el texto directamente en el campo de ese nivel."
-)
-seccion_catalogo = st.selectbox("Sección", list(CATALOGO.keys()), index=1)
-categorias_catalogo = list(CATALOGO[seccion_catalogo].keys())
-categoria_catalogo = st.selectbox("Categoría", categorias_catalogo)
-opciones_catalogo = CATALOGO[seccion_catalogo][categoria_catalogo]
-combinacion = st.selectbox("Elemento o combinación original", opciones_catalogo)
-c_a, c_b, c_c = st.columns([1, 2, 2])
-with c_a:
-    cantidad_combo = st.number_input("Cantidad", min_value=1, max_value=100, value=1, step=1, key="cantidad_combo")
-with c_b:
-    nivel_combo = st.selectbox("Añadir al nivel", niveles_disponibles, index=0)
-with c_c:
-    texto_personalizado = st.text_input(
-        "Texto personalizado (opcional)",
-        placeholder="Si lo completas, se usará este texto en lugar del elemento del catálogo."
+# Lista de revisión: se mantiene separada y con las opciones exactas que indicó la usuaria
+st.header("4. Elementos que pueden requerir revisión según criterio del proyecto")
+st.caption("Esta lista conserva los elementos señalados como exteriores o semiabiertos sujetos a revisión.")
+revision_opciones = CATALOGO[
+    "ELEMENTOS QUE PUEDEN REQUERIR REVISIÓN SEGÚN CRITERIO DEL PROYECTO"
+]["Elementos exteriores o semiabiertos sujetos a revisión"]
+rev_col1, rev_col2 = st.columns([4, 1])
+with rev_col1:
+    revision_item = st.selectbox("Elemento sujeto a revisión", revision_opciones, key="revision_item")
+with rev_col2:
+    revision_cantidad = st.number_input("Cantidad", min_value=1, max_value=100, value=1, key="revision_cantidad")
+if st.button("Añadir elemento a revisión"):
+    st.session_state.revision_seleccionados.append(
+        {"texto": revision_item, "cantidad": int(revision_cantidad)}
     )
-
-def texto_combo_final():
-    base = texto_personalizado.strip() if texto_personalizado.strip() else combinacion
-    if texto_personalizado.strip():
-        if cantidad_combo > 1:
-            return f"{cantidad_combo} × {base}"
-        return base
-    # Si la frase ya expresa una cantidad o una combinación compuesta, no se modifica.
-    compuestas = [
-        "Tres habitaciones", "Dos habitaciones", "Cuatro habitaciones",
-        "Habitación Principal", "Dormitorio de servicio", "Sala – comedor",
-        "Sala - comedor", "Cocina – comedor", "Terraza techada",
-        "Gazebo con área BBQ", "Escaleras con almacén", "Dos escaleras",
-        "Cinco cubículos", "Tres oficinas", "Baños para ambos sexos",
-        "½ Baños para ambos sexos",
-    ]
-    if cantidad_combo == 1:
-        return base
-    if any(base.startswith(x) for x in compuestas):
-        return f"{cantidad_combo} × {base}"
-    return pluralizar_descripcion(base, int(cantidad_combo))
-
-if st.button("Añadir combinación al nivel", type="primary"):
-    texto_nuevo = texto_combo_final()
-    if nivel_combo == "Soterrado":
-        key = "nivel_6_texto"
-    else:
-        indice_nivel = niveles_disponibles.index(nivel_combo) + 1
-        key = f"nivel_{indice_nivel}_texto"
-    actual = st.session_state.get(key, "")
-    st.session_state[key] = (actual.rstrip() + "\n" + texto_nuevo).strip() if actual.strip() else texto_nuevo
-    st.success(f"Se añadió «{texto_nuevo}» a {nivel_combo}.")
     st.rerun()
-
-# --- Generación de texto ---
-st.header("5. Descripción generada")
-exteriores = lineas(st.session_state.get("exteriores_texto", ""))
-interiores = {}
-for i, nivel in enumerate(niveles_a_mostrar, start=1):
-    interiores[nivel] = lineas(st.session_state.get(f"nivel_{i}_texto", ""))
-if st.session_state.get("nivel_6_texto", "").strip():
-    interiores["Soterrado"] = lineas(st.session_state["nivel_6_texto"])
-
-tipo = st.session_state.get("tipo_proyecto", "vivienda")
-cantidad_niveles = st.session_state.get("cantidad_niveles", 1)
-encabezado = st.session_state.get("encabezado_personalizado", "")
-descripcion = construir_descripcion(
-    tipo, cantidad_niveles, exteriores, interiores, encabezado,
-    st.session_state.get("titulo_exteriores", "EXTERIORES"),
-    st.session_state.get("frase_edificacion", "")
+administrar_lista(
+    "Elementos sujetos a revisión",
+    st.session_state.revision_seleccionados,
+    "revision_lista",
 )
 
-st.text_area("Texto final editable", value=descripcion, height=420, key="texto_final_editable")
+# Vista de catálogo íntegro
+with st.expander("Consultar catálogo completo original"):
+    for seccion, categorias in CATALOGO.items():
+        st.markdown(f"## {seccion}")
+        for categoria, elementos in categorias.items():
+            st.markdown(f"**{categoria}**")
+            for elemento in elementos:
+                st.markdown(f"- {elemento}")
+
+# Resultado
+st.header("5. Descripción generada")
+texto_final = construir_texto()
+st.text_area(
+    "Vista previa del texto generado",
+    value=texto_final,
+    height=450,
+    disabled=True,
+)
 st.download_button(
     "Descargar descripción en TXT",
-    data=st.session_state.get("texto_final_editable", descripcion),
+    data=texto_final,
     file_name="descripcion_proyecto.txt",
     mime="text/plain",
     use_container_width=True,
 )
-st.caption(
-    "Nota: las cantidades de combinaciones especiales se muestran como «n × frase» para evitar "
-    "alterar términos técnicos o cambiar accidentalmente el sentido de la descripción. "
-    "Revisa el texto final antes de incorporarlo a un documento oficial."
+st.info(
+    "Nota: cuando una cantidad es mayor que uno, se presenta como «n × elemento» para conservar "
+    "exactamente la expresión seleccionada, incluidas las combinaciones especiales. Revisa la redacción "
+    "final antes de incorporarla a un documento oficial."
 )
