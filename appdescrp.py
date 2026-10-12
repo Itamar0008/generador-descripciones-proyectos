@@ -544,10 +544,15 @@ with st.expander("Consultar catálogo completo original"):
 # Resultado
 st.header("5. Descripción generada")
 texto_final = construir_texto()
-st.text_area("Vista previa del texto generado", value=texto_final, height=450, key="vista_previa")
+st.text_area(
+    "Vista previa del texto generado",
+    value=texto_final,
+    height=450,
+    disabled=True,
+)
 st.download_button(
     "Descargar descripción en TXT",
-    data=st.session_state.get("vista_previa", texto_final),
+    data=texto_final,
     file_name="descripcion_proyecto.txt",
     mime="text/plain",
     use_container_width=True,
